@@ -17,6 +17,10 @@ struct ContentView: View {
     @State private var analysisResult: PhotoAnalysisService.AnalysisResult?
     @State private var analysisProgress: String = ""
     
+    // Custom colors for photo-related elements
+    private let photoButtonColor = Color(red: 0.2, green: 0.5, blue: 0.9)
+    private let photoButtonBackground = Color(red: 0.95, green: 0.95, blue: 1.0)
+    
     var body: some View {
         NavigationView {
             ScrollView {
@@ -25,6 +29,7 @@ struct ContentView: View {
                         VStack(spacing: 20) {
                             ProgressView()
                                 .scaleEffect(1.5)
+                                .tint(photoButtonColor)
                             Text(analysisProgress)
                                 .font(.headline)
                                 .multilineTextAlignment(.center)
@@ -35,15 +40,22 @@ struct ContentView: View {
                         PhotosPicker(selection: $selectedItem,
                                    matching: .images,
                                    photoLibrary: .shared()) {
-                            VStack {
+                            VStack(spacing: 16) {
                                 Image(systemName: "photo.on.rectangle.angled")
                                     .font(.system(size: 40))
+                                    .foregroundColor(photoButtonColor)
                                 Text("Select Photo")
                                     .font(.headline)
+                                    .foregroundColor(photoButtonColor)
                             }
                             .frame(maxWidth: .infinity, maxHeight: 200)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(10)
+                            .background(photoButtonBackground)
+                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(photoButtonColor.opacity(0.3), lineWidth: 2)
+                            )
+                            .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
                         }
                         .padding()
                     }
@@ -51,8 +63,11 @@ struct ContentView: View {
                     if let image = selectedImage {
                         Image(uiImage: image)
                             .resizable()
-                            .scaledToFit()
-                            .frame(maxHeight: 300)
+                            .scaledToFill()
+                            .frame(width: UIScreen.main.bounds.width * 0.9, height: 300)
+                            .clipped()
+                            .cornerRadius(16)
+                            .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
                             .padding()
                         
                         if let result = analysisResult {
@@ -145,6 +160,8 @@ struct ContentView: View {
                     print("DEBUG: New photo selected, starting analysis")
                     isAnalyzing = true
                     analysisProgress = "Loading photo..."
+                    // Clear previous analysis results
+                    analysisResult = nil
                     Task {
                         await analyzeSelectedPhoto(newValue)
                         isAnalyzing = false

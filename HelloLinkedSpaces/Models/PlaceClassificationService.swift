@@ -9,7 +9,7 @@ class PlaceClassificationService {
     private let openAIApiKey: String
     
     // Define our target categories
-    private let targetCategories = ["restaurant", "sightseeing", "shopping", "hotel", "park"]
+    private let targetCategories = ["restaurant", "cafe", "sightseeing", "shopping", "hotel", "park", "airport", "museum"]
     
     init(modelName: String = "MobileNetV2", openAIApiKey: String) throws {
         self.modelName = modelName
