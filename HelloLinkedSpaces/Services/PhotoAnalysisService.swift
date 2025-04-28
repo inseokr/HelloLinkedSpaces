@@ -23,6 +23,30 @@ class PhotoAnalysisService: ObservableObject {
         loadMetadata()
     }
     
+    private func getOpenAIApiKey() -> String {
+        guard let configPath = Bundle.main.path(forResource: "Config", ofType: "xcconfig"),
+              let configString = try? String(contentsOfFile: configPath, encoding: .utf8) else {
+            fatalError("Config.xcconfig file not found")
+        }
+        
+        // Parse the config file to find the API key
+        let lines = configString.components(separatedBy: .newlines)
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            if trimmedLine.hasPrefix("OPENAI_API_KEY") {
+                let components = trimmedLine.components(separatedBy: "=")
+                if components.count == 2 {
+                    let apiKey = components[1].trimmingCharacters(in: .whitespaces)
+                    if apiKey != "YOUR_API_KEY_HERE" {
+                        return apiKey
+                    }
+                }
+            }
+        }
+        
+        fatalError("OpenAI API key not found in Config.xcconfig. Please add it to the configuration file.")
+    }
+    
     func analyzePhoto(_ image: UIImage, progress: @escaping (String) -> Void) async -> AnalysisResult? {
         print("DEBUG: Starting photo analysis")
         
@@ -40,7 +64,7 @@ class PhotoAnalysisService: ObservableObject {
             progress("Loading model...")
             
             // Initialize the PlaceClassificationService with MobileNetV2
-            let classifier = try PlaceClassificationService(modelName: "MobileNetV2", openAIApiKey: "YOUR_API_KEY_HERE")
+            let classifier = try PlaceClassificationService(modelName: "MobileNetV2", openAIApiKey: getOpenAIApiKey())
             
             print("DEBUG: Running prediction")
             progress("Analyzing image...")

@@ -1,0 +1,6 @@
+// API Keys
+OPENAI_API_KEY = YOUR_API_KEY_HERE
+
+// Other configuration
+PRODUCT_BUNDLE_IDENTIFIER = com.yourdomain.HelloLinkedSpaces
+DEVELOPMENT_TEAM = YOUR_TEAM_ID 

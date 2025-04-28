@@ -13,8 +13,9 @@ class PlaceClassificationService {
     
     init(modelName: String = "MobileNetV2", openAIApiKey: String) throws {
         self.modelName = modelName
-        self.openAIApiKey = openAIApiKey
         
+        self.openAIApiKey = openAIApiKey
+
         // Load the model
         guard let modelURL = Bundle.main.url(forResource: modelName, withExtension: "mlmodelc") else {
             print("DEBUG: Failed to find model in main bundle")
