@@ -88,7 +88,7 @@ class PlaceClassificationService {
         
         // Create prompt for OpenAI
         let prompt = """
-        Given these image tags and their confidence scores, classify the image into one of these categories: restaurant, sightseeing, shopping, hotel, or park.
+        Given these image tags and their confidence scores, classify the image into one of these categories: \(targetCategories.joined(separator: ", ")).
         For each category, provide a confidence score (0-1) and explain which tags contributed to that classification.
         
         Tags:
@@ -109,6 +109,8 @@ class PlaceClassificationService {
                 }
             ]
         }
+        
+        Note: Only use the following categories: \(targetCategories.joined(separator: ", "))
         """
         
         // Call OpenAI API
