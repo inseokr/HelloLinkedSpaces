@@ -44,7 +44,7 @@ playground.xcworkspace
 #
 # Xcode automatically generates this directory with a .xcworkspacedata file and xcuserdata
 # hence it is not needed unless you have added a package configuration file to your project
-.swiftpm
+# .swiftpm
 
 .build/
 
@@ -66,9 +66,11 @@ playground.xcworkspace
 
 Carthage/Build/
 
-# Accio dependency management
-Dependencies/
-.accio/
+# Accidental .DS_Store files
+.DS_Store
+
+# Sensitive Configuration
+Config.xcconfig
 
 # fastlane
 #
@@ -88,9 +90,6 @@ fastlane/test_output
 # https://github.com/johnno1962/injectionforxcode
 
 iOSInjectionProject/
-
-# macOS
-.DS_Store
 
 # Configuration files
 *.xcconfig 

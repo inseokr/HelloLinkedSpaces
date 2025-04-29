@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Photos
 import PhotosUI
 
 struct ContentView: View {
@@ -16,15 +15,30 @@ struct ContentView: View {
     @State private var isAnalyzing = false
     @State private var analysisResult: PhotoAnalysisService.AnalysisResult?
     @State private var analysisProgress: String = ""
+    @State private var isPickerPresented = false
+    @State private var shouldResetPicker = false
+    @State private var selectedCategory: String? = nil
     
     // Custom colors for photo-related elements
-    private let photoButtonColor = Color(red: 0.2, green: 0.5, blue: 0.9)
-    private let photoButtonBackground = Color(red: 0.95, green: 0.95, blue: 1.0)
+    private let photoButtonColor = Color.blue
+    private let tagBackgroundColor = Color(red: 0.95, green: 0.97, blue: 1.0)
+    private let tagTextColor = Color.blue
     
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Header section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Photo Analysis")
+                            .font(.system(size: 34, weight: .bold))
+                        Text("Upload a photo to analyze its contents")
+                            .font(.system(size: 18))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
+                    
                     if isAnalyzing {
                         VStack(spacing: 20) {
                             ProgressView()
@@ -35,171 +49,303 @@ struct ContentView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
                         }
-                        .frame(maxWidth: .infinity, maxHeight: 200)
+                        .frame(maxWidth: .infinity, minHeight: 200)
+                        .background(Color.white)
+                        .cornerRadius(16)
+                        .padding(.horizontal)
                     } else {
-                        PhotosPicker(selection: $selectedItem,
-                                   matching: .images,
-                                   photoLibrary: .shared()) {
+                        // Photo upload button
+                        Button(action: {
+                            isPickerPresented = true
+                        }) {
                             VStack(spacing: 16) {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .font(.system(size: 40))
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 32))
                                     .foregroundColor(photoButtonColor)
-                                Text("Select Photo")
-                                    .font(.headline)
-                                    .foregroundColor(photoButtonColor)
+                                Text("Select a photo to analyze")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(.black)
+                                Text("Tap to upload")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.gray)
                             }
-                            .frame(maxWidth: .infinity, maxHeight: 200)
-                            .background(photoButtonBackground)
-                            .cornerRadius(16)
-                            .overlay(
+                            .frame(maxWidth: .infinity, minHeight: 200)
+                            .background(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(photoButtonColor.opacity(0.3), lineWidth: 2)
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 2)
+                                    .background(Color.white)
                             )
-                            .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+                            .cornerRadius(16)
                         }
-                        .padding()
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.horizontal)
+                        .photosPicker(isPresented: $isPickerPresented,
+                                    selection: $selectedItem,
+                                    matching: .images,
+                                    photoLibrary: .shared())
                     }
                     
                     if let image = selectedImage {
+                        // Selected image preview
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFill()
-                            .frame(width: UIScreen.main.bounds.width * 0.9, height: 300)
-                            .clipped()
-                            .cornerRadius(16)
-                            .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 300)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(
+                                Button(action: {
+                                    selectedImage = nil
+                                    selectedItem = nil
+                                    analysisResult = nil
+                                }) {
+                                    Circle()
+                                        .fill(.white)
+                                        .frame(width: 24, height: 24)
+                                        .overlay(
+                                            Image(systemName: "xmark")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(.black)
+                                        )
+                                }
+                                .padding(12),
+                                alignment: .topTrailing
+                            )
+                            .padding(.horizontal)
                         
                         if let result = analysisResult {
-                            VStack(alignment: .leading, spacing: 15) {
-                                Text("Analysis Results")
-                                    .font(.title2)
-                                    .bold()
+                            // Categories section
+                            VStack(alignment: .leading, spacing: 24) {
+                                Text("Possible Categories")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .padding(.horizontal)
                                 
-                                ForEach(result.topCategories, id: \.category) { category in
-                                    VStack(alignment: .leading, spacing: 8) {
+                                if let selected = selectedCategory,
+                                   let category = result.topCategories.first(where: { $0.category == selected }) {
+                                    // Expanded category view
+                                    VStack(alignment: .leading, spacing: 16) {
                                         HStack {
-                                            Text("Category:")
-                                                .font(.headline)
-                                            Text(category.category.capitalized)
-                                                .font(.title3)
-                                                .foregroundColor(.blue)
+                                            HStack {
+                                                Image(systemName: getCategoryIcon(category.category))
+                                                    .foregroundColor(getCategoryColor(category.category))
+                                                Text(category.category.capitalized)
+                                                    .font(.system(size: 18, weight: .semibold))
+                                            }
+                                            Spacer()
+                                            Button(action: {
+                                                withAnimation {
+                                                    selectedCategory = nil
+                                                }
+                                            }) {
+                                                Image(systemName: "xmark")
+                                                    .foregroundColor(.black)
+                                                    .font(.system(size: 16, weight: .medium))
+                                            }
                                         }
                                         
-                                        HStack {
-                                            Text("Confidence:")
-                                                .font(.headline)
-                                            Text(String(format: "%.1f%%", category.confidence * 100))
-                                                .font(.title3)
-                                                .foregroundColor(.blue)
-                                        }
-                                        
-                                        if !category.matchedTags.isEmpty {
-                                            Text("Matched Tags:")
-                                                .font(.headline)
-                                                .padding(.top, 5)
+                                        HStack(alignment: .top, spacing: 24) {
+                                            VStack(alignment: .leading) {
+                                                Text("Confidence")
+                                                    .font(.system(size: 16))
+                                                    .foregroundColor(.gray)
+                                                Text("\(Int(category.confidence * 100))%")
+                                                    .font(.system(size: 18, weight: .medium))
+                                            }
                                             
-                                            VStack(alignment: .leading, spacing: 8) {
-                                                ForEach(category.matchedTags, id: \.tag) { tag in
-                                                    HStack {
-                                                        Text(tag.tag)
-                                                            .font(.subheadline)
-                                                        Spacer()
-                                                        Text(String(format: "%.1f%%", tag.confidence * 100))
-                                                            .font(.subheadline)
-                                                            .foregroundColor(.gray)
+                                            if !category.matchedTags.isEmpty {
+                                                VStack(alignment: .leading, spacing: 8) {
+                                                    Text("Matched Tags")
+                                                        .font(.system(size: 16))
+                                                        .foregroundColor(.gray)
+                                                    
+                                                    ScrollView(.horizontal, showsIndicators: false) {
+                                                        HStack(spacing: 8) {
+                                                            ForEach(category.matchedTags, id: \.tag) { tag in
+                                                                Text(tag.tag)
+                                                                    .font(.system(size: 16))
+                                                                    .foregroundColor(tagTextColor)
+                                                                    .padding(.horizontal, 16)
+                                                                    .padding(.vertical, 8)
+                                                                    .background(tagBackgroundColor)
+                                                                    .cornerRadius(20)
+                                                            }
+                                                        }
                                                     }
-                                                    .padding(.horizontal, 12)
-                                                    .padding(.vertical, 6)
-                                                    .background(Color.blue.opacity(0.1))
-                                                    .cornerRadius(8)
                                                 }
                                             }
                                         }
                                     }
                                     .padding()
-                                    .background(Color.gray.opacity(0.05))
-                                    .cornerRadius(10)
-                                }
-                                
-                                if !result.allTags.isEmpty {
-                                    Text("Top 20 Extracted Tags:")
-                                        .font(.headline)
-                                        .padding(.top, 5)
-                                    
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        ForEach(result.allTags.prefix(20), id: \.tag) { tag in
-                                            HStack {
-                                                Text(tag.tag)
-                                                    .font(.subheadline)
-                                                Spacer()
-                                                Text(String(format: "%.1f%%", tag.confidence * 100))
-                                                    .font(.subheadline)
-                                                    .foregroundColor(.gray)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Color.white)
+                                    .cornerRadius(12)
+                                    .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 2)
+                                    .padding(.horizontal)
+                                } else {
+                                    // Regular grid view of categories
+                                    LazyVGrid(columns: [
+                                        GridItem(.flexible()),
+                                        GridItem(.flexible())
+                                    ], spacing: 16) {
+                                        ForEach(result.topCategories.prefix(2), id: \.category) { category in
+                                            Button(action: {
+                                                withAnimation {
+                                                    selectedCategory = category.category
+                                                }
+                                            }) {
+                                                VStack(alignment: .leading, spacing: 12) {
+                                                    HStack {
+                                                        Image(systemName: getCategoryIcon(category.category))
+                                                            .foregroundColor(getCategoryColor(category.category))
+                                                        Text(category.category.capitalized)
+                                                            .font(.system(size: 18, weight: .semibold))
+                                                    }
+                                                    Text("Confidence: \(Int(category.confidence * 100))%")
+                                                        .font(.system(size: 16))
+                                                        .foregroundColor(.gray)
+                                                }
+                                                .padding()
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .background(Color.white)
+                                                .cornerRadius(12)
                                             }
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 6)
-                                            .background(Color.gray.opacity(0.1))
-                                            .cornerRadius(8)
+                                            .buttonStyle(PlainButtonStyle())
                                         }
                                     }
+                                    .padding(.horizontal)
                                 }
+                                
+                                // Tags section
+                                VStack(alignment: .leading, spacing: 16) {
+                                    Text("Extracted Tags")
+                                        .font(.system(size: 24, weight: .bold))
+                                    
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 8) {
+                                            ForEach(result.allTags.prefix(10), id: \.tag) { tag in
+                                                Text(tag.tag)
+                                                    .font(.system(size: 16))
+                                                    .foregroundColor(tagTextColor)
+                                                    .padding(.horizontal, 16)
+                                                    .padding(.vertical, 8)
+                                                    .background(tagBackgroundColor)
+                                                    .cornerRadius(20)
+                                            }
+                                            if result.allTags.count > 10 {
+                                                Text("+\(result.allTags.count - 10) more")
+                                                    .font(.system(size: 16))
+                                                    .foregroundColor(.gray)
+                                                    .padding(.horizontal, 16)
+                                                    .padding(.vertical, 8)
+                                                    .background(Color.gray.opacity(0.1))
+                                                    .cornerRadius(20)
+                                            }
+                                        }
+                                        .padding(.horizontal)
+                                    }
+                                }
+                                .padding(.horizontal)
                             }
-                            .padding()
-                            .background(Color.gray.opacity(0.05))
-                            .cornerRadius(10)
-                            .padding()
+                            .padding(.top)
                         }
                     }
                 }
+                .padding(.vertical)
             }
-            .navigationTitle("Photo Analysis")
-            .onChange(of: selectedItem) { oldValue, newValue in
-                print("DEBUG: Photo selection changed")
-                if let newValue {
-                    print("DEBUG: New photo selected, starting analysis")
-                    isAnalyzing = true
-                    analysisProgress = "Loading photo..."
-                    // Clear previous analysis results
-                    analysisResult = nil
-                    Task {
-                        await analyzeSelectedPhoto(newValue)
-                        isAnalyzing = false
-                        analysisProgress = ""
-                        print("DEBUG: Analysis completed")
-                    }
+            .background(Color(red: 0.98, green: 0.98, blue: 0.98))
+        }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .onChange(of: selectedItem) { oldValue, newValue in
+            if let newValue {
+                isAnalyzing = true
+                analysisProgress = "Loading photo..."
+                analysisResult = nil
+                
+                Task {
+                    await analyzeSelectedPhoto(newValue)
+                    isAnalyzing = false
+                    analysisProgress = ""
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            if isAnalyzing {
+                isAnalyzing = false
+                analysisProgress = ""
+                analysisResult = nil
+                selectedImage = nil
+                selectedItem = nil
+            }
+            // Reset picker presentation state
+            isPickerPresented = false
+        }
+    }
+    
+    private func analyzeSelectedPhoto(_ item: PhotosPickerItem) async {
+        isPickerPresented = false
+        if let data = try? await item.loadTransferable(type: Data.self),
+           let image = UIImage(data: data) {
+            selectedImage = image
+            if let result = await photoService.analyzePhoto(image) { progress in
+                Task { @MainActor in
+                    analysisProgress = progress
+                }
+            } {
+                await MainActor.run {
+                    analysisResult = result
                 }
             }
         }
     }
     
-    private func analyzeSelectedPhoto(_ item: PhotosPickerItem) async {
-        print("DEBUG: Starting photo analysis process")
-        if let data = try? await item.loadTransferable(type: Data.self) {
-            print("DEBUG: Successfully loaded photo data")
-            if let image = UIImage(data: data) {
-                print("DEBUG: Successfully created UIImage")
-                selectedImage = image
-                if let result = await photoService.analyzePhoto(image) { progress in
-                    print("DEBUG: Progress update: \(progress)")
-                    Task { @MainActor in
-                        analysisProgress = progress
-                    }
-                } {
-                    await MainActor.run {
-                        analysisResult = result
-                        print("DEBUG: Updated UI with analysis result - Categories: \(result.topCategories.count)")
-                    }
-                }
-            } else {
-                print("DEBUG: Failed to create UIImage from data")
-            }
-        } else {
-            print("DEBUG: Failed to load photo data")
+    private func getCategoryIcon(_ category: String) -> String {
+        switch category.lowercased() {
+        case "restaurant":
+            return "fork.knife.circle.fill"
+        case "cafe":
+            return "cup.and.saucer.fill"
+        case "sightseeing":
+            return "mountain.2.circle.fill"
+        case "shopping":
+            return "bag.circle.fill"
+        case "hotel":
+            return "house.circle.fill"
+        case "park":
+            return "leaf.circle.fill"
+        case "airport":
+            return "airplane.circle.fill"
+        case "museum":
+            return "building.columns.circle.fill"
+        default:
+            return "mappin.circle.fill"
+        }
+    }
+    
+    private func getCategoryColor(_ category: String) -> Color {
+        switch category.lowercased() {
+        case "restaurant":
+            return .orange
+        case "cafe":
+            return .brown
+        case "sightseeing":
+            return .blue
+        case "shopping":
+            return .purple
+        case "hotel":
+            return .indigo
+        case "park":
+            return .green
+        case "airport":
+            return .blue
+        case "museum":
+            return .orange
+        default:
+            return .gray
         }
     }
 }
 
+// If you need it, here is the FlowLayout (not directly used yet)
 struct FlowLayout: Layout {
     var spacing: CGFloat = 8
     
@@ -242,3 +388,4 @@ struct FlowLayout: Layout {
 #Preview {
     ContentView()
 }
+
